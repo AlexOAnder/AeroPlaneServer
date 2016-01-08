@@ -1,2 +1,2 @@
 # AeroPlaneServer
-LearnJava adn UDP
+LearnJava and UDP connections in Java
