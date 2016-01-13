@@ -22,7 +22,7 @@ public class UDPAeroServer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println(FindPlane(30));
+		//System.out.println(FindPlane(30));
 		initUDP();
 	}
 
@@ -41,10 +41,11 @@ public class UDPAeroServer {
 				String sentence = new String(receivePacket.getData());
 				System.out.println("RECEIVED: " + sentence);
 
-				String answer = "";
-				int weigth = 0;
+				String answer = "Something Wrong";
+				int weight = 0;
 				try {
-					weigth = Integer.parseInt(sentence);
+					weight = Integer.parseInt(sentence.trim());
+					answer = FindPlane(weight);
 				} catch (NumberFormatException ex) {
 					answer = "Wrong int - try to send int, please";
 				}
@@ -52,7 +53,7 @@ public class UDPAeroServer {
 				InetAddress IPAddress = receivePacket.getAddress();
 				int port = receivePacket.getPort();
 
-				String capitalizedSentence = sentence.toUpperCase();
+				String capitalizedSentence = answer.toUpperCase();
 				sendData = capitalizedSentence.getBytes();
 				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
 				serverSocket.send(sendPacket);
