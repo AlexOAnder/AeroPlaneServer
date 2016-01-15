@@ -1,29 +1,33 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
 public class UDPAeroServer {
 	DatagramSocket serverSocket = null;
+	String delimiter = "#";
 	public List<Plane> planes = new ArrayList<Plane>();
 
 	public UDPAeroServer() {
 		try {
 			LoadPlaneData();
-		} catch (IOException e) {
+			initUDP();
+		} 
+		catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// System.out.println(FindPlane(30));
-		initUDP();
 	}
 
 	private void initUDP() {
@@ -54,8 +58,9 @@ public class UDPAeroServer {
 				}
 
 				if (sentence.contains("/ch")) {
-					if (ParsePlane(sentence)==1)
+					if (ChangePlanesFile(sentence) == 0)
 						answer = "Data changed!";
+					LoadPlaneData(); // after data change, we need to reload our planesList
 				}
 				if (sentence.contentEquals("status")) {
 					answer = ShowStatus();
@@ -83,28 +88,75 @@ public class UDPAeroServer {
 		new UDPAeroServer();
 	}
 
-	private void ChangeFile(Plane pl,int number) throws IOException
-	{
-		BufferedReader reader = new BufferedReader(new FileReader("src/PlaneData.txt"));
-		String line;
-		List<String> lines = new ArrayList<String>();
-		while ((line = reader.readLine()) != null) {
-			lines.add(line);
+	private int WriteToFile(Plane pl, int number) {
+		BufferedReader reader;
+		try {
+			reader = new BufferedReader(new FileReader("src/PlaneData.txt"));
+
+			String line;
+			List<String> lines = new ArrayList<String>();
+			while ((line = reader.readLine()) != null) {
+				lines.add(line);
+			}
+			reader.close();
+			int iterator = 0;
+			int countOfDelimiters = 0;
+			int startErasePos = 0;
+
+			if (number == 1) {
+				startErasePos = 0;
+			} else {
+				for (String tmp : lines) {
+					if (delimiter.equals(tmp)) {
+						countOfDelimiters++;
+					}
+					if (countOfDelimiters == number-1)
+						{
+							startErasePos = iterator+1;
+							break;
+						}
+
+					iterator++;
+				}
+			}
+
+			lines.remove(startErasePos);
+			lines.remove(startErasePos);
+			lines.remove(startErasePos);
+			// change lines
+
+			lines.add(startErasePos, pl.Name);
+			lines.add(startErasePos + 1, Integer.toString(pl.MinWeight));
+			lines.add(startErasePos + 2, Integer.toString(pl.MaxWeight));
+			// open file for the change
+			BufferedWriter writer = new BufferedWriter(new FileWriter("src/PlaneData.txt"));
+			writer.flush();
+			for (String tmp : lines) {
+				writer.write(tmp);
+				writer.write("\n");
+			}
+			writer.close();
+			return 0;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return -1; // -1 mean error;
 		}
 	}
-	
-	private int ParsePlane(String line) {
+
+	private int ChangePlanesFile(String line) {
+		Plane chgPlane = new Plane();
 		try {
 			int number = 0;
 			int i = line.indexOf('\n');
 			String s = line.substring(4, i);
 			line = line.substring(i + 1);
 			System.out.println("Num->" + s);
-			
+
 			// find a number
 			number = Integer.parseInt(s);
-			if (number<0 || number>3) return 0;
-			
+			if (number < 0 || number > 3)
+				return -1;
+
 			int j = 0;
 			while (true) {
 				j++;
@@ -112,18 +164,27 @@ public class UDPAeroServer {
 				if (i1 < 0) {
 					i1 = line.length();
 					String s2 = line.substring(0, i1);
+					chgPlane.MaxWeight = Integer.parseInt(s2.trim());
 					System.out.println("s" + j + "->" + s2);
 					break;
 				}
 				String s1 = line.substring(0, i1);
+				if (j == 1)
+					chgPlane.Name = s1.trim();
+				if (j == 2)
+					chgPlane.MinWeight = Integer.parseInt(s1.trim());
 				line = line.substring(i1 + 1);
 				System.out.println("s" + j + "->" + s1);
-				
-				if (line.length() <= 1) break;
+
+				if (line.length() <= 1)
+					break;
 			}
-			return 1;
+
+			// 0 mean success, -1 -> error
+			return WriteToFile(chgPlane, number);
+
 		} catch (NumberFormatException ex) {
-			return 0;
+			return -1;
 		}
 
 	}
@@ -162,12 +223,12 @@ public class UDPAeroServer {
 		while ((line = reader.readLine()) != null) {
 			lines.add(line);
 		}
+		reader.close();
 		int counter = 0;
 		List<Plane> tmpPlanes = new ArrayList<Plane>();
 		Plane pl = new Plane();
-		String delimiter = "#";
-		for (String tmp : lines) {
 
+		for (String tmp : lines) {
 			if (!delimiter.equals(tmp)) {
 				counter++;
 				switch (counter) {
