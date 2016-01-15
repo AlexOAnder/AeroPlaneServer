@@ -22,7 +22,7 @@ public class UDPAeroServer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		//System.out.println(FindPlane(30));
+		// System.out.println(FindPlane(30));
 		initUDP();
 	}
 
@@ -33,24 +33,35 @@ public class UDPAeroServer {
 			byte[] receiveData = new byte[1024];
 			byte[] sendData = new byte[1024];
 			System.out.println("Hi - its a AeroPlane Server!");
-			
+
 			while (true) {
 				receiveData = new byte[1024];
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				serverSocket.receive(receivePacket);
 				String sentence = new String(receivePacket.getData());
+				sentence = sentence.trim();
 				System.out.println("RECEIVED: " + sentence);
 
 				String answer = "Something Wrong";
 				int weight = 0;
+
 				try {
 					weight = Integer.parseInt(sentence.trim());
 					answer = FindPlane(weight);
-					
+
 				} catch (NumberFormatException ex) {
 					answer = "Wrong int - try to send int, please";
 				}
-				System.out.println("Answer->"+answer);
+
+				if (sentence.contains("/ch")) {
+					if (ParsePlane(sentence)==1)
+						answer = "Data changed!";
+				}
+				if (sentence.contentEquals("status")) {
+					answer = ShowStatus();
+				}
+
+				System.out.println("Answer->" + answer);
 				InetAddress IPAddress = receivePacket.getAddress();
 				int port = receivePacket.getPort();
 
@@ -72,9 +83,54 @@ public class UDPAeroServer {
 		new UDPAeroServer();
 	}
 
+	private void ChangeFile(Plane pl,int number) throws IOException
+	{
+		BufferedReader reader = new BufferedReader(new FileReader("src/PlaneData.txt"));
+		String line;
+		List<String> lines = new ArrayList<String>();
+		while ((line = reader.readLine()) != null) {
+			lines.add(line);
+		}
+	}
+	
+	private int ParsePlane(String line) {
+		try {
+			int number = 0;
+			int i = line.indexOf('\n');
+			String s = line.substring(4, i);
+			line = line.substring(i + 1);
+			System.out.println("Num->" + s);
+			
+			// find a number
+			number = Integer.parseInt(s);
+			if (number<0 || number>3) return 0;
+			
+			int j = 0;
+			while (true) {
+				j++;
+				int i1 = line.indexOf('\n');
+				if (i1 < 0) {
+					i1 = line.length();
+					String s2 = line.substring(0, i1);
+					System.out.println("s" + j + "->" + s2);
+					break;
+				}
+				String s1 = line.substring(0, i1);
+				line = line.substring(i1 + 1);
+				System.out.println("s" + j + "->" + s1);
+				
+				if (line.length() <= 1) break;
+			}
+			return 1;
+		} catch (NumberFormatException ex) {
+			return 0;
+		}
+
+	}
+
 	private String FindPlane(int weight) {
-		try{
-			if (weight == 0){
+		try {
+			if (weight == 0) {
 				return "Nothing to carry - zero weight";
 			}
 			if (!planes.isEmpty())
@@ -84,12 +140,18 @@ public class UDPAeroServer {
 					}
 				}
 			return "NotAvailable";
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			e.printStackTrace();
 			return "Server Error!";
 		}
+	}
+
+	private String ShowStatus() {
+		String res = "";
+		for (Plane p : planes) {
+			res += "Name:" + p.Name + " Min: " + p.MinWeight + " Max: " + p.MaxWeight + " \n ";
+		}
+		return res;
 	}
 
 	private void LoadPlaneData() throws IOException {
