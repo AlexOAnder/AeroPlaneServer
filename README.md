@@ -1,4 +1,4 @@
-# AeroPlaneServer
+# AeroPlaneServer/Сlient
 LearnJava and UDP connections in Java
 
 В задании требовалось создать приложение клиент-сервер, который использует UDP соединение. 
