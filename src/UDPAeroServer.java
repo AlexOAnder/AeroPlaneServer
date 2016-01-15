@@ -33,11 +33,11 @@ public class UDPAeroServer {
 			byte[] receiveData = new byte[1024];
 			byte[] sendData = new byte[1024];
 			System.out.println("Hi - its a AeroPlane Server!");
+			
 			while (true) {
+				receiveData = new byte[1024];
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-
 				serverSocket.receive(receivePacket);
-
 				String sentence = new String(receivePacket.getData());
 				System.out.println("RECEIVED: " + sentence);
 
@@ -46,10 +46,11 @@ public class UDPAeroServer {
 				try {
 					weight = Integer.parseInt(sentence.trim());
 					answer = FindPlane(weight);
+					
 				} catch (NumberFormatException ex) {
 					answer = "Wrong int - try to send int, please";
 				}
-
+				System.out.println("Answer->"+answer);
 				InetAddress IPAddress = receivePacket.getAddress();
 				int port = receivePacket.getPort();
 
@@ -68,19 +69,27 @@ public class UDPAeroServer {
 	}
 
 	public static void main(String args[]) {
-
 		new UDPAeroServer();
-
 	}
 
 	private String FindPlane(int weight) {
-		if (!planes.isEmpty())
-			for (Plane pl : planes) {
-				if (pl.MinWeight <= weight && pl.MaxWeight > weight) {
-					return pl.Name;
-				}
+		try{
+			if (weight == 0){
+				return "Nothing to carry - zero weight";
 			}
-		return "NotAvailable";
+			if (!planes.isEmpty())
+				for (Plane pl : planes) {
+					if (pl.MinWeight <= weight && pl.MaxWeight > weight) {
+						return pl.Name;
+					}
+				}
+			return "NotAvailable";
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			return "Server Error!";
+		}
 	}
 
 	private void LoadPlaneData() throws IOException {
