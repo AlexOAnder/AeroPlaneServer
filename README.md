@@ -1,5 +1,5 @@
 # AeroPlaneServer/Сlient
-LearnJava and UDP connections in Java
+LearnJava and UDP connections in Java ( Eclipse IDE)
 
 В задании требовалось создать приложение клиент-сервер, который использует UDP соединение и работу с файлами. 
 
